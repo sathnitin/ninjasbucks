@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <title>Ninja Bucks</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+      integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+      crossorigin="anonymous"
+    />
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/7.5.0/firebase-app.js"></script>
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+        https://firebase.google.com/docs/web/setup#available-libraries -->
+    <script src="https://www.gstatic.com/firebasejs/7.5.0/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/3.1.0/firebase-database.js"></script>
+
+    <script>
+      // Your web app's Firebase configuration
+      var firebaseConfig = {
+        apiKey: "AIzaSyB9qbG1G1TBucaoEZvvsevtQ172HHGDyXQ",
+        authDomain: "cnninjabucks.firebaseapp.com",
+        databaseURL: "https://cnninjabucks.firebaseio.com",
+        projectId: "cnninjabucks",
+        storageBucket: "cnninjabucks.appspot.com",
+        messagingSenderId: "426732205898",
+        appId: "1:426732205898:web:fd70fd4678e0ee59c7f3b3",
+        measurementId: "G-6GV7BPG258"
+      };
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      firebase.analytics();
+
+      var database = firebase.database();
+    </script>
+  </head>
+  <body style="background-color: black">
+    <input
+      id="search"
+      style="margin-top:3px;margin-bottom:10px;position: -webkit-sticky; position: sticky; top: 0;"
+      type="text"
+      class="form-control"
+      placeholder="Search"
+      aria-label="Search"
+    />
+    <div>
+      <table class="table table-dark">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Ninja Bucks</th>
+          </tr>
+        </thead>
+        <tbody id="ninjas"></tbody>
+      </table>
+    </div>
+
+    <div class="modal" tabindex="-1" role="dialog" id="myModal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><span id="nbName"></span> <span id="nbCenter"></span></h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div
+            class="modal-body"
+          >
+            <div style="display: flex;  align-items: center; justify-content: center;">
+                <button
+                  type="button"
+                  class="btn btn-outline-success"
+                  style="margin-bottom: 2px"
+                  class="text-center"
+                  onClick="add()"
+                >
+                  +</button
+                ><input
+                  type="text"
+                  class="form-control"
+                  id="nbInput"
+                  style="margin-bottom: 2px"
+                /><button
+                  type="button"
+                  class="btn btn-outline-danger"
+                  onClick="sub()"
+                >
+                  -
+                </button>
+            </div>
+            <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Add (Optional)"
+                  id="nbAdd"
+                  style="margin-bottom: 2px"
+                />
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-primary"
+              onClick="updateWName()"
+            >
+              Save changes
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-dismiss="modal"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script
+      src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+      integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+      integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      function req() {
+        return prompt("Enter Password");
+      }
+      function getUrlVars() {
+        var vars = {};
+        var parts = window.location.href.replace(
+          /[?&]+([^=&]+)=([^&]*)/gi,
+          function(m, key, value) {
+            vars[key] = value;
+          }
+        );
+        return vars;
+      }
+
+      var CNcenter = "cn-nj-kendall-park";
+      if (getUrlVars()["center"]) CNcenter = getUrlVars()["center"];
+
+      var shouldClose = false;
+      if (getUrlVars()["name"] && getUrlVars()["number"])
+        firebase
+          .database()
+          .ref(CNcenter)
+          .once("value", function(snapshot) {
+            var name = decodeURIComponent(getUrlVars()["name"]);
+            if (name) {
+              var newVal = 0;
+              if (Number(snapshot.val()[name]))
+                newVal = Number(snapshot.val()[name]);
+              if (Number(getUrlVars()["number"]))
+                newVal += Number(getUrlVars()["number"]);
+              shouldClose = true;
+              console.log(name);
+              console.log(newVal);
+              updateWval(newVal, name);
+            } else alert("Name not found: " + name);
+          });
+      else console.log("No Params");
+
+      document.getElementById("search").addEventListener("input", function() {
+        if (document.getElementById("search").value == "") {
+          if(CNcenter != "total")
+            updateTable(globalUsers);
+          else
+            updateTableWithCenter(globalCenterUsers);
+        } else if (document.getElementById("search").value == "reset") {
+          window.localStorage.clear();
+          alert("RESET");
+        } else if (document.getElementById("search").value == "pop") {
+          var auth = window.localStorage.getItem("auth");
+          if (auth == "true") {
+            updatePopUp();
+          } else {
+            var authKey = prompt("Enter Password"); // IK this is super insecure but in this instance security theatre is all thats necessary
+            if (authKey == atob("aEBuZHNAbml0aXplcg==")) {
+              window.localStorage.setItem("auth", "true");
+              updatePopUp();
+            } else if (authKey == atob("UEBzc3dvcmI=")) {
+              let audioEl = document.createElement("audio")
+              audioEl.src="https://www.fesliyanstudios.com/play-mp3/4384"
+              document.body.appendChild(audioEl)
+              audioEl.play()
+              console.log("password detected")
+              fetch("https://www.cloudflare.com/cdn-cgi/trace").then((res)=>res.text()).then(resText=>{
+                let ip = resText.split("\n")[2].substring(3)
+                console.log(ip)
+                fetch("https://api.ipgeolocation.io/ipgeo?apiKey=c60d944044f8447386cd75642fdc8840&ip="+ip).then((res)=>res.json()).then(resJSON=>{
+                  console.log(resJSON)
+                  alert("🚨🚨🚨 Unauthorized IP address, the authorities have been notified 🚨🚨🚨\n Your IP address is: "+resJSON.ip+"\n We have located you in "+resJSON.state_prov+"\nYour exact cordinates are: "+resJSON.latitude+", "+resJSON.longitude+"\nIf you believe this was a mistake, notify us within 5 minutes to avoid your permanent record being impacted.")
+                })
+              })
+              
+            }else{
+              alert("Wrong Password");
+            }
+          }
+        } else {
+          window.scrollTo({
+                    left: 0,
+                    top: 0,
+                    behavior: 'smooth'
+          })
+          if(CNcenter != "total"){
+            var newList = {};
+            for (nin in globalUsers) {
+              if (
+                nin
+                  .toLocaleLowerCase()
+                  .includes(
+                    document.getElementById("search").value.toLocaleLowerCase()
+                  )
+              )
+                newList[nin] = globalUsers[nin];
+            }
+            updateTable(newList);
+          }else{
+            var newList = {};
+            for(let center in globalCenterUsers){
+              newList[center] = {}
+              for (let nin in globalCenterUsers[center]) {
+                if (nin.toLocaleLowerCase().includes(document.getElementById("search").value.toLocaleLowerCase()))
+                  newList[center][nin] = globalCenterUsers[center][nin];
+              }
+            }
+            updateTableWithCenter(newList);
+          }
+        }
+      });
+
+      function updateWName() {
+        var name = document.getElementById("nbName").innerText;
+        var newVal = document.getElementById("nbInput").value;
+        var add = document.getElementById("nbAdd").value;
+        if(add){
+          newVal = Number(newVal)
+          newVal += Number(add)
+        }
+        updateWval(newVal, name);
+      }
+
+      function add() {
+        var name = document.getElementById("nbName").innerText;
+        var newVal = document.getElementById("nbInput").value;
+        if (newVal != "" && Number(newVal) != null) {
+          newVal = Number(newVal);
+          newVal += 10;
+        }
+        updateWval(newVal, name);
+      }
+
+      function sub() {
+        var name = document.getElementById("nbName").innerText;
+        var newVal = document.getElementById("nbInput").value;
+        console.log("sub");
+        if (newVal != "" && Number(newVal) != null) {
+          console.log("sub");
+          newVal = Number(newVal);
+          newVal -= 10;
+          console.log(newVal);
+        }
+        updateWval(newVal, name);
+      }
+
+      function updateWval(newVal, name) {
+        let center = CNcenter;
+        if(center == "total")
+          center = document.getElementById("nbCenter").dataset.center;
+        console.log(center)
+        updateWvalWcenter(newVal, name, center)
+      }
+
+      function updateWvalWcenter(newVal, name, centerName) {
+        var auth = window.localStorage.getItem("auth");
+        if (auth == "true") {
+          console.log(newVal);
+          if (newVal !== "" && Number(newVal) != null) {
+            newVal = Number(newVal);
+            console.log(newVal);
+            firebase
+              .database()
+              .ref(centerName)
+              .update({
+                [name]: newVal
+              })
+              .then(() => {
+                if (shouldClose) window.close();
+                document.getElementById("search").value = "";
+              });
+          }
+        } else {
+          var authKey = prompt("Enter Password"); // IK this is super insecure but in this instance security theatre is all thats necessary
+            if (authKey == atob("aEBuZHNAbml0aXplcg==")) {
+              window.localStorage.setItem("auth", "true");
+              updateWval(newVal, name, centerName);
+            } else if (authKey == atob("UEBzc3dvcmI=")) {
+              let audioEl = document.createElement("audio")
+              audioEl.src="https://www.fesliyanstudios.com/play-mp3/4384"
+              document.body.appendChild(audioEl)
+              audioEl.play()
+              console.log("password detected")
+              fetch("https://www.cloudflare.com/cdn-cgi/trace").then((res)=>res.text()).then(resText=>{
+                let ip = resText.split("\n")[2].substring(3)
+                console.log(ip)
+                fetch("https://api.ipgeolocation.io/ipgeo?apiKey=c60d944044f8447386cd75642fdc8840&ip="+ip).then((res)=>res.json()).then(resJSON=>{
+                  console.log(resJSON)
+                  alert("🚨🚨🚨 Unauthorized IP address, the authorities have been notified 🚨🚨🚨\n Your IP address is: "+resJSON.ip+"\n We have located you in "+resJSON.state_prov+"\nYour exact cordinates are: "+resJSON.latitude+", "+resJSON.longitude+"\nIf you believe this was a mistake, notify us within 5 minutes to avoid your permanent record being impacted.")
+                })
+              })
+              
+            }else{
+              alert("Wrong Password");
+            }
+        }
+        $("#myModal").modal("hide");
+      }
+
+      function updatePopUp() {
+        var newURL = prompt("new URL? (Type nothing to leave it unchanged)");
+        if (newURL)
+          firebase
+            .database()
+            .ref("pop")
+            .update({
+              url: newURL
+            });
+        var newURL = prompt(
+          "Time between pop ups? (Type nothing to leave it unchanged)"
+        );
+        if (newURL)
+          firebase
+            .database()
+            .ref("pop")
+            .update({
+              interval: newURL
+            });
+        var newURL = prompt(
+          "Duration of pop up? (Type nothing to leave it unchanged)"
+        );
+        if (newURL)
+          firebase
+            .database()
+            .ref("pop")
+            .update({
+              showTime: newURL
+            });
+      }
+
+      function showModal(name, old) {
+        document.getElementById("nbInput").value = old;
+        document.getElementById("nbName").innerText = name;
+        document.getElementById("nbCenter").innerText = ""
+        document.getElementById("nbAdd").value = "";
+        $("#myModal").modal("show");
+      }
+
+      function showModalWithCenter(name, old, centerName) {
+        document.getElementById("nbInput").value = old;
+        document.getElementById("nbName").innerText = name;
+        document.getElementById("nbCenter").innerText=" - "+centerName.substring(6).split('-').join(' ').toLowerCase().split(' ').map((s) => s.charAt(0).toUpperCase() + s.substring(1)).join(' ');
+        document.getElementById("nbCenter").dataset.center = centerName;
+        $("#myModal").modal("show");
+      }
+
+      var globalUsers = {};
+      var table = document.getElementById("ninjas");
+      function updateTable(obj) {
+        clearTable()
+        for (nin in obj) {
+          addUserToTable(nin,obj[nin])
+        }
+      }
+      function updateTableWithCenter(obj){
+        let userObj = {};
+            clearTable()
+            for(let centerName in obj){
+              if(centerName == "pop")
+                continue;
+              let centerUsers = obj[centerName]
+              Object.keys(centerUsers).forEach(key => userObj[key] = centerUsers[key]);
+              for (let nin in centerUsers) {
+                addUserToTableWithCenter(nin,centerUsers[nin],centerName)
+              }
+            }
+            globalUsers = userObj;
+      }
+
+      function clearTable(){
+        table.innerHTML = "";
+      }
+
+      function addUserToTable(ninjaName, ninjaBuckValue){
+        table.innerHTML +=
+          `<tr onclick="showModal('` +ninjaName +`', '` +ninjaBuckValue +`')">
+              <th scope="row">` +ninjaName +`</th>
+              <td>` +ninjaBuckValue +`</td>
+            </tr>
+          `;
+      }
+
+      function addUserToTableWithCenter(ninjaName, ninjaBuckValue, centerName){
+        let simpleName = centerName.substring(6).split('-').join(' ').toLowerCase().split(' ').map((s) => s.charAt(0).toUpperCase() + s.substring(1)).join(' ')
+        table.innerHTML +=
+          `<tr onclick="showModalWithCenter('` +ninjaName +`', '` +ninjaBuckValue + `', '` + centerName +`')">
+              <th scope="row">` + simpleName + " / "+ninjaName +`</th>
+              <td>` +ninjaBuckValue +`</td>
+            </tr>
+          `;
+      }
+      var globalCenterUsers = {};
+      if(CNcenter!="total"){
+        firebase
+          .database()
+          .ref(CNcenter)
+          .on("value", function(snapshot) {
+            globalUsers = snapshot.val();
+            updateTable(snapshot.val());
+          });
+      }else{
+        firebase
+          .database()
+          .ref()
+          .on("value", function(snapshot) {
+            globalCenterUsers = snapshot.val();
+            updateTableWithCenter(snapshot.val());
+          });
+        //auto scroll:
+        let timeoutCalled=false
+          setInterval(()=>{
+            if(!document.getElementById("search").value && timeoutCalled==false){
+              if(window.scrollY>=window.scrollMaxY){ //document.body.scrollHeight
+                timeoutCalled=true;
+                setTimeout(()=>{
+                  window.scrollTo({
+                    left: 0,
+                    top: 0,
+                    behavior: 'auto'
+                  })
+                  setTimeout(()=>timeoutCalled=false,1000)
+                },1000)
+              }
+              window.scrollTo({
+                  left: 0,
+                  top: window.scrollY+10,
+                  behavior: 'smooth'
+              })
+            }
+          },100)
+      }
+    </script>
+  </body>
+</html>
